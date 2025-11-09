@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rat Path Movement — Centered Layout</title>
+  <link rel="stylesheet" href="path.css" />
+  <link rel="stylesheet" href="doors.css">
+    <link rel="stylesheet" href="corners.css" />
+
+  <style>
+    body {
+      margin: 0;
+      background: #dbe7f7;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(circle at center, #dbe7f7 0%, #a3b9de 40%, #6a85b6 100%);
+      border: 2px solid #3E54A5;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      margin-top: 20px;
+    }
+
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #2b3a67;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #1c264a; }
+
+    /* Rat */
+    .rat {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #00000000;
+      box-shadow: #1c264a 0px 0px 20px 0px;
+      border-radius: px;
+      transform: translate(-50%, -50%);
+      z-index: 900;
+      pointer-events: auto;
+      cursor: grab;
+    }
+
+    /* Dot + trail styles */
+    .trail-marker {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 0, 0, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(220, 50, 50, 0.95);
+      border: 1px solid rgba(0,0,0,0.25);
+      transform: translate(-50%, -50%);
+      z-index: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+    }
+    .dot .label {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #111;
+      background: rgba(255,255,255,0.85);
+      padding: 0 3px;
+      border-radius: 3px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .dot.blocked {
+      background: yellow;
+      border: 1px solid orange;
+    }
+
+    /* Debug panel inside container bottom-right */
+    .debug-panel {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 240px;
+      max-height: 200px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      overflow: auto;
+      border-radius: 8px;
+      z-index: 1000;
+    }
+
+    .path1, .path2, .path3, .path4, .path5, .path6, .path7,
+    .path8, .path9, .path10, .path11, .path12, .path13, .path14, .path15 {
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="rat" id="rat" style="left:200px; top:200px"><image class="person" src="person (1).png" alt="Person"></image></div>
+
+    <img id="flag" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="flag" style="position:absolute; left:320px; top:570px; width:24px; height:24px;" />
+
+    <!-- Path divs -->
+    <div class="path1"></div>
+    <div class="path2"></div>
+    <div class="path3"></div>
+    <div class="path4"></div>
+    <div class="path5"></div>
+    <div class="path6"></div>
+    <div class="path7"></div>
+    <div class="path8"></div>
+    <div class="path9"></div>
+    <div class="path10"></div>
+    <div class="path11"></div>
+    <div class="path12"></div>
+    <div class="path13"></div>
+    <div class="path14"></div>
+    <div class="path15"></div>
+    <div class="door1"></div>
+    <div class="door2"></div>
+    <div class="door3"></div>
+    <div class="door4"></div>
+    <div class="door5"></div>
+    <div class="door6"></div>
+    <div class="door7"></div>
+    <div class="door8"></div>
+    <div class="door9"></div>
+    <div class="door10"></div>
+    <div class="door11"></div>
+    <div class="door12"></div>
+    <div class="door13"></div>
+    <div class="door14"></div>
+    <div class="exit1"></div>
+    <div class="exit2"></div>
+    <div class="corner1"></div>
+    <div class="corner2"></div>
+    <div class="corner2a"></div>
+    <div class="corner2b"></div>
+    <div class="corner2c"></div>
+    <div class="corner2ca"></div>
+    <div class="corner3"></div>
+    <div class="corner3a"></div>
+    <div class="corner4"></div>
+    <div class="corner5"></div>
+    <div class="corner6"></div>
+    <div class="corner6a"></div>
+    <div class="corner7"></div>
+    <div class="corner7a"></div>
+    <div class="corner7b"></div>
+    <div class="corner8"></div>
+    <div class="corner9"></div>
+    <div class="corner9a"></div>
+    <div class="corner9b"></div>
+    <div class="corner10"></div>
+    <div class="corner11"></div>
+    <div class="corner12"></div>
+    <div class="corner13"></div>
+    <div class="corner14"></div>
+    <div class="corner15"></div>
+    <div class="corner16"></div>
+    <div class="corner17"></div>
+    <div class="corner18"></div>
+    <div class="corner19"></div>
+    <div class="corner20"></div>
+    <div class="corner21"></div>
+    <div class="corner22"></div>
+
+
+
+    <div class="debug-panel" id="debugPanel">
+      <strong>Rat Debug Info</strong><br>
+      Position: <span id="pos">-</span><br>
+      Step: <span id="step">-</span><br>
+      Direction: <span id="dir">-</span><br>
+      Next blocked?: <span id="nb">-</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="toggleBtn">Start</button>
+    <button id="resetBtn">Reset Blocks</button>
+  </div>
+
+  <script src="try11.js"></script>
+</body>
+</html>
