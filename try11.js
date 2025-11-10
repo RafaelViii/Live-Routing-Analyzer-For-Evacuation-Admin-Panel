@@ -790,8 +790,8 @@ function animateMainStep(){
     const distToFinish = Math.hypot(ratX - f.pos.left, ratY - f.pos.top);
     if(distToFinish < 12){
       moving = false;
-      toggleBtn.textContent = "Finished!";
-      console.log(`Rat reached finish line ${f.stepIndex}`);
+      toggleBtn.textContent = "Done";
+      console.log(`You've reached the exit safely ${f.stepIndex}`);
     }
   });
 
@@ -1153,7 +1153,7 @@ ratEl.style.top = path[0].top + 'px';
       placedHazardImages.length = 0;
       document.querySelectorAll('.icon-card.selected').forEach(c => c.classList.remove('selected'));
     }
-    const resetBtn = document.getElementById('resetHazardsBtn');
+    const resetBtn = document.getElementById('resetBtn');
     if(resetBtn) resetBtn.addEventListener('click', resetHandler);
 
     // expose API

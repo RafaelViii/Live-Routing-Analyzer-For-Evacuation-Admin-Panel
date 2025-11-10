@@ -1,18 +1,33 @@
+:root{
+  --redhazard-color: rgba(255, 0, 0, 0.85);
+}
+
 /* Icons panel - card list view on the right */
 .icons-panel {
-  width: 140px;
-  max-width: 180px;
-  padding: 12px;
-  background: rgba(255,255,255,0.96);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-  border-left: 1px solid rgba(0,0,0,0.06);
+  /* width: 140px; */
+  max-width: fit-content;
+  padding: 15px;
+
+  background: rgb(21, 22, 34);
+
+  /* From https://css.glass */
+  /* background: rgba(18, 19, 34, 0.6);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12.2px);
+  -webkit-backdrop-filter: blur(12.2px);
+  border: 1px solid rgba(18, 19, 34, 0.53); */
+  /* background:#1213221f; */
+  /* box-shadow: 0 2px 18px rgba(0, 0, 0, 0.89); */
+  
+  border: 1px solid #15162541;
   position: absolute;
-  right: 12px;
-  top: 80px;
-  bottom: 20px;
+  right: 0px;
+  top: 120px;
+  /* bottom: 20px; */
   overflow-y: auto;
   z-index: 600;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
@@ -20,12 +35,14 @@
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #222;
+  color: #ffffff;
+  font-family:Arial, Helvetica, sans-serif;
   text-align: center;
 }
-
+  
 .icons-list {
   display: flex;
+  color: white;
   flex-direction: column;
   gap: 10px;
   padding: 2px;
@@ -36,12 +53,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: rgb(28, 29, 48);
   border-radius: 8px;
   padding: 6px;
   cursor: grab;
   user-select: none;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid  rgb(34, 36, 56);
   transition: transform .12s ease, box-shadow .12s ease;
 }
 .icon-card:active { cursor: grabbing; transform: scale(.98); }
@@ -54,17 +71,12 @@
 }
 .icon-label {
   font-size: 12px;
-  color: #333;
+  color: #ffffff;
+  font-weight: 700;
   line-height: 1;
 }
 
-/* small helper for actions */
-.icons-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
+
 
 /* Visual hazard style for path elements */
 .path.hazard {
@@ -85,6 +97,24 @@
   z-index: 700;
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
 }
+
+.secondary{
+  position:relative;
+  height: 35px;
+  /* top: 5px; */
+  /* left: 0px; */
+  background-color:var(--redhazard-color);
+}
+
+.exitIcon{
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  top: 20px;
+  left: 40px;
+  z-index: 700;
+}
+
 
 /* keep layout tidy when smaller screens — collapse icons panel lightly */
 @media (max-width: 900px){

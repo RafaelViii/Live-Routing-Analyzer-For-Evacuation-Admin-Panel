@@ -1,6 +1,10 @@
+:root{
+  --arearoom: #1213221a;
+}
+
 /* --- Shared path styles --- */
 .path {
-  background: rgba(79, 123, 190, 1);
+  background: rgb(99, 79, 190);
   border-width: 0;
   opacity: 0.0;
   position: absolute;
@@ -65,11 +69,11 @@
 /*now in this roomoutpathA, i want to make it oneway aswell, so the path a only move to from*/
 
 .arearoom {
-  background: rgb(190, 79, 79);
+  background: var(--arearoom);
   border-width: 0;
-  opacity: 0.0;
+  opacity: 1;
   position: absolute;
-  box-shadow: 0px 2.83px 2.83px rgba(0, 0, 0, 0.75);
+  /* box-shadow: 0px 2.83px 2.83px rgb(0, 0, 0); */
   z-index: 1;
 }
 .arearoom1A { left: 70px; top: 290px; width: 119px;  height: 47px;  }
@@ -81,6 +85,15 @@
 .arearoomoutA{ left: 245px; top: 200px; width: 298px;  height:136px;  }
 .arearoomoutB {left: 279px; top: 336px; width: 264px;  height:70px;  }
 
+
+.areafull {
+  background: rgba(190, 79, 79, 0);
+  border-width: 0;
+  opacity: 0.3;
+  position: absolute;
+  box-shadow: 0px 2.83px 2.83px rgb(0, 0, 0);
+  z-index: 1;
+}
 .areafull {left: 70px; top: 54px; width: 718px;  height:490px;  }
 
 

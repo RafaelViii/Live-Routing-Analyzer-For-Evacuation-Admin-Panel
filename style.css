@@ -1,7 +1,13 @@
 :root{
     --door-color: #4CAF50;
     --corner-color: #FF9800;
-    --container-color:radial-gradient(circle at center, #dbe7f7 0%, #a3b9de 40%, #6a85b6 100%);
+    --buttoncontrol-bg: #a71420;
+    --nav-background-color: #121322;
+    --toggle-bg: #3aa73f;
+    --reset-bg: #d13636;
+    --content-border-color: rgba(0, 0, 0, 0.71);
+    /* --container-color:radial-gradient(circle at center, #dbe7f7 0%, #a3b9de 40%, #8396b9 100%); */
+    --container-color:white;
 }
 
 
@@ -16,16 +22,16 @@ body {
       min-height: 100vh;
     }
 
-nav .header{
+    nav{
     position: relative;
-
-        height: fit-content;
-        padding: 10px;
-        width: 850px; text-align: center;
-        border-radius: 10px;
-        color: white;
-        background-color: rgb(29, 32, 70);
-
+    /* top: -20px; */
+    /* padding: 5px; */
+    margin: 0 0 40px 0;
+    width:100%; 
+    text-align: center;
+    border-radius: 1px;
+    color: white;
+    background-color: var(--nav-background-color);
     }
 
     .container {
@@ -33,19 +39,29 @@ nav .header{
       width: 800px;
       height: 600px;
       background: var(--container-color);
-      border: 5px solid #242b68b6;
-      border-radius: 20px;
+      border: 5px solid var(--content-border-color);
+      border-radius: 2px;
       padding: 30px;
       overflow: hidden;
       box-shadow: -1px 8px 34px -5px rgba(66, 68, 90, 1);
     }
 
     .controls {
-      margin-top: 10px;
+      height: 35px;
+      margin-top: 550px;
       padding: 20px;
       display: flex;
-      border-radius: 50px;
+      /* border-radius: px; */
       gap: 10px;
+    }
+
+    .controls #toggleBtn{
+      background-color: var(--toggle-bg);
+    }
+
+    
+    .controls #resetBtn{
+      background-color: var(--reset-bg);
     }
     
 
@@ -53,7 +69,7 @@ nav .header{
       padding: 8px 14px;
       border-radius: 8px;
       border: none;
-      background: #2b3a67;
+      background: var(--buttoncontrol-bg);
       color: white;
       cursor: pointer;
       font-size: 14px;
@@ -117,18 +133,17 @@ nav .header{
 
     /* Debug panel inside container bottom-right */
     .debug-panel {
-      position: absolute;
-      top:75%;
+      position: relative;
+      /* top:75%; */
+      margin-top: 50px;
       bottom: 10px;
-      margin-left: 95%;
-      margin-right: 10%;
-      width: 200px;
-      max-height: 100px;
+      width: fit-content;
+      max-height: fit-content;
       background: rgb(255, 255, 255);
       color: #1a1e24;
-      padding: 12px;
+      padding: 15px;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 16px;
+      font-size: 14px;
       overflow: auto;
       border-radius: 8px;
       z-index: 1000;
@@ -148,5 +163,7 @@ nav .header{
     }
 
     .person{
+      position: relative;
         width: 70px;
+        /* top: 100px; */
     }
