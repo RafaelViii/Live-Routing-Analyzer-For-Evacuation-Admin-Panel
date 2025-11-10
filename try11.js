@@ -127,7 +127,7 @@ function createDotsForAllSegments(){
       const labelEl = document.createElement('div');
       labelEl.className = 'label';
       labelEl.textContent = label;
-       dot.appendChild(labelEl);
+      //  dot.appendChild(labelEl);
 
       // meta
       dot.dataset.segment = i;
@@ -352,7 +352,7 @@ finishLines.forEach(f => {
     dirOutput.textContent = moveForward ? "forward" : "back";
     return requestAnimationFrame(animateStep);
   } else {
-    nbOutput.textContent = "-";
+    nbOutput.textContent = "...";
   }
 
   // move ratio
@@ -386,8 +386,8 @@ finishLines.forEach(f => {
 
     if(distance < 12){ // 12px tolerance (half the icon size)
       moving = false;
-      toggleBtn.textContent = "Finished!";
-      console.log(`Rat reached finish line ${f.stepIndex}`);
+      toggleBtn.textContent = "Exit Reached!";
+      console.log(`Person reached the exit. ${f.stepIndex}`);
     }
   });
 }

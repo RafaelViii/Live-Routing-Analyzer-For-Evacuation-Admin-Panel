@@ -1,0 +1,152 @@
+:root{
+    --door-color: #4CAF50;
+    --corner-color: #FF9800;
+    --container-color:radial-gradient(circle at center, #dbe7f7 0%, #a3b9de 40%, #6a85b6 100%);
+}
+
+
+body {
+      margin: 0;
+      background: var(--container-color);
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+    }
+
+nav .header{
+    position: relative;
+
+        height: fit-content;
+        padding: 10px;
+        width: 850px; text-align: center;
+        border-radius: 10px;
+        color: white;
+        background-color: rgb(29, 32, 70);
+
+    }
+
+    .container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: var(--container-color);
+      border: 5px solid #242b68b6;
+      border-radius: 20px;
+      padding: 30px;
+      overflow: hidden;
+      box-shadow: -1px 8px 34px -5px rgba(66, 68, 90, 1);
+    }
+
+    .controls {
+      margin-top: 10px;
+      padding: 20px;
+      display: flex;
+      border-radius: 50px;
+      gap: 10px;
+    }
+    
+
+    button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #2b3a67;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #1c264a; }
+
+    /* Rat */
+    .rat {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      background: #00000000;
+      border-radius: 50%;
+      transform: translate(-50%, -60%);
+      z-index: 900;
+      pointer-events: auto;
+      cursor: grab;
+    }
+
+    /* Dot + trail styles */
+    .trail-marker {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgb(81, 255, 0);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(224, 75, 75, 0.562);
+      transform: translate(-50%, -50%);
+      z-index: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+    }
+    .dot .label {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #111;
+      background: rgba(255,255,255,0.85);
+      padding: 0 3px;
+      border-radius: 3px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .dot.blocked {
+      background: yellow;
+      border: 1px solid orange;
+    }
+
+    /* Debug panel inside container bottom-right */
+    .debug-panel {
+      position: absolute;
+      top:45%;
+      bottom: 10px;
+      margin-left: 95%;
+      margin-right: 10%;
+      width: 200px;
+      max-height: 100px;
+      background: rgb(255, 255, 255);
+      color: #1a1e24;
+      padding: 12px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      overflow: auto;
+      border-radius: 8px;
+      z-index: 1000;
+    }
+
+    .path1, .path2, .path3, .path4, .path5, .path6, .path7,
+    .path8, .path9, .path10, .path11, .path12, .path13, .path14, .path15 {
+      pointer-events: none;
+      z-index: 100;
+    }
+
+
+    #pos{
+
+        font-style: italic;
+        font-size: 14px;
+    }
+
+    .person{
+        width: 70px;
+    }
