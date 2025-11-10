@@ -118,7 +118,7 @@ nav .header{
     /* Debug panel inside container bottom-right */
     .debug-panel {
       position: absolute;
-      top:45%;
+      top:75%;
       bottom: 10px;
       margin-left: 95%;
       margin-right: 10%;

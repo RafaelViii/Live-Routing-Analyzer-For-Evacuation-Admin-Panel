@@ -1,8 +1,9 @@
 /* try11.js
-   Fixed version:
-   - Moved the ICON/Hazard IIFE out of animateRoomStep (it was accidentally nested inside the function).
-   - Made markNearbyRoomDots only mark room dots when the point is inside that room's area (prevents stray dots like at 35,35).
-   - Kept rest of your logic intact.
+   Your provided file with only the trail-related changes merged in.
+   I replaced the dot generation and added trail helper functions, and
+   hooked trail handling into animateMainStep so dots become visible (trail)
+   when the rat passes over them and toggle off when passed again.
+   The rest of your original logic (rooms, transitions, hazards, UI) is unchanged.
 */
 
 /* ===========================
@@ -35,14 +36,7 @@ const DOT_SPACING = 10;
 const MAX_LABELS = 26;
 const labels = "abcdefghijklmnopqrstuvwxyz".split("");
 
-// main path dots: dotsBySegment[segmentIndex] = [meta,...]
 const dotsBySegment = [];
-
-/* -------------------------------
-  New: room path dots (one-way)
-  - roomDotsByIndex[roomIndex] = [meta,...]
-  ------------------------------- */
-const roomDotsByIndex = []; // parallel to roomPaths (built after buildRoomPaths)
 
 function dist(a, b) { return Math.hypot(a.left - b.left, a.top - b.top); }
 function lerp(a, b, t) { return { left: a.left + (b.left - a.left) * t, top: a.top + (b.top - a.top) * t }; }
@@ -115,14 +109,11 @@ function buildRoomPaths(){
       length: Math.hypot(end.left - start.left, end.top - start.top)
     });
   }
-
-  // Rebuild room dots whenever roomPaths are rebuilt
-  createRoomDotsForPaths();
 }
 
 /* Find nearest main segment and projection t for a point */
 function findNearestMainSegmentAndT(point){
-  let best = { segIndex: 0, t: 0, d: Infinity, proj: { left: path[0].left, top: path[0].top } };
+  let best = { segIndex: 0, t: 0, d: Infinity };
   for(let i=0;i<path.length;i++){
     const a = path[i];
     const b = path[(i+1) % path.length];
@@ -151,54 +142,60 @@ function pointIsInsideArea(areaEl, point){
   return (point.left >= left && point.left <= left + r.width && point.top >= top && point.top <= top + r.height);
 }
 
-/* ================================
-   DOT GENERATION & TRAIL HELPERS
-   - main path dots (dotsBySegment) keep toggle-on/toggle-off behavior
-   - room path dots (roomDotsByIndex) are one-way: once set visible they stay
-   - transition movement will mark nearby main dots using setDotTrail (no toggle)
-   ================================ */
-
-/* Create main path dots and store meta on dotsBySegment */
+/* -------------------------------
+  Dot creation (main path) - REPLACED WITH TRAIL-AWARE VERSION
+  This version creates dots and stores meta (x,y,t,blocked,trail) for each dot.
+  Dots are invisible by default; trail toggling uses inline styles so visibility is reliable.
+*/
 function createDotsForAllSegments(){
   // remove any existing dots
-  document.querySelectorAll('.dot').forEach(d=>d.remove());
+  document.querySelectorAll('.dot').forEach(d => d.remove());
   dotsBySegment.length = 0;
 
-  for(let i=0;i<path.length;i++){
+  const container = document.querySelector('.container');
+
+  for (let i = 0; i < path.length; i++) {
     const start = path[i];
-    const end   = path[(i+1) % path.length];
+    const end = path[(i + 1) % path.length]; // wrap
     const segmentLen = dist(start, end);
-    let count = Math.min(MAX_LABELS, Math.max(2, Math.round(segmentLen / DOT_SPACING) + 1));
-    if(count > MAX_LABELS) count = MAX_LABELS;
+    let count = Math.min(
+      MAX_LABELS,
+      Math.max(2, Math.round(segmentLen / DOT_SPACING) + 1)
+    );
+    if (count > MAX_LABELS) count = MAX_LABELS;
 
     const arr = [];
-    for(let k=0;k<count;k++){
-      const t = (count===1) ? 0 : (k / (count - 1));
+    for (let k = 0; k < count; k++) {
+      const t = count === 1 ? 0 : (k / (count - 1));
       const pos = lerp(start, end, t);
 
       const dot = document.createElement('div');
       dot.className = 'dot';
+      // position & sizing
+      dot.style.position = 'absolute';
       dot.style.left = pos.left + 'px';
       dot.style.top = pos.top + 'px';
-      // make sure default state is invisible (inline styles to avoid CSS specificity issues)
-      dot.style.position = 'absolute';
-      dot.style.opacity = '0';
-      dot.style.background = 'transparent';
       dot.style.width = '10px';
       dot.style.height = '10px';
-      dot.style.transform = 'translate(-50%,-50%)';
+      dot.style.transform = 'translate(-50%, -50%)';
       dot.style.borderRadius = '50%';
       dot.style.zIndex = '600';
+      // ensure invisible by default using inline styles (prevent CSS specificity issues)
+      dot.style.opacity = '0';
+      dot.style.background = 'transparent';
+      dot.style.boxShadow = 'none';
       dot.style.transition = 'opacity 0.12s linear, transform 0.12s ease, box-shadow 0.12s ease';
 
-      const label = labels[Math.min(k, labels.length-1)];
+      // optional label for debugging
+      const label = labels[Math.min(k, labels.length - 1)];
       const labelEl = document.createElement('div');
       labelEl.className = 'label';
       labelEl.textContent = label;
-      // hide label by default
+      // keep label hidden by default (optional)
       labelEl.style.display = 'none';
       dot.appendChild(labelEl);
 
+      // dataset metadata for compatibility with other code
       dot.dataset.segment = i;
       dot.dataset.index = k;
       dot.dataset.label = label;
@@ -207,9 +204,13 @@ function createDotsForAllSegments(){
 
       const meta = { el: dot, x: pos.left, y: pos.top, label, blocked: false, t: t, trail: false };
 
-      dot.addEventListener('click', (ev) => { ev.stopPropagation(); toggleDotBlocked(i,k); });
+      // legacy click toggles blocked (keeps existing functionality)
+      dot.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        toggleDotBlocked(i, k);
+      });
 
-      containerEl.appendChild(dot);
+      container.appendChild(dot);
       arr.push(meta);
     }
 
@@ -217,106 +218,43 @@ function createDotsForAllSegments(){
   }
 }
 
-/* Create dots for room paths (one-way). They are stored in roomDotsByIndex in same order as roomPaths. */
-function createRoomDotsForPaths(){
-  // remove any existing room-dot elements
-  document.querySelectorAll('.room-dot').forEach(d=>d.remove());
-  roomDotsByIndex.length = 0;
-
-  for(let ri = 0; ri < roomPaths.length; ri++){
-    const rp = roomPaths[ri];
-    if(!rp) { roomDotsByIndex.push([]); continue; }
-    const start = rp.start;
-    const end = rp.end;
-    const segLen = Math.hypot(end.left - start.left, end.top - start.top) || 1;
-    let count = Math.max(2, Math.round(segLen / DOT_SPACING) + 1);
-    // cap count modestly to avoid excessive dots on long room paths
-    count = Math.min(count, 40);
-
-    const arr = [];
-    for(let k=0;k<count;k++){
-      const t = (count===1) ? 0 : (k / (count-1));
-      const pos = lerp(start, end, t);
-
-      const dot = document.createElement('div');
-      dot.className = 'room-dot';
-      dot.style.left = pos.left + 'px';
-      dot.style.top = pos.top + 'px';
-      dot.style.position = 'absolute';
-      dot.style.opacity = '0';
-      dot.style.background = 'transparent';
-      dot.style.width = '9px';
-      dot.style.height = '9px';
-      dot.style.transform = 'translate(-50%,-50%)';
-      dot.style.borderRadius = '50%';
-      dot.style.zIndex = '610';
-      dot.style.transition = 'opacity 0.12s linear, transform 0.12s ease, box-shadow 0.12s ease';
-
-      const meta = { el: dot, x: pos.left, y: pos.top, t, trail: false, roomIndex: ri };
-
-      containerEl.appendChild(dot);
-      arr.push(meta);
-    }
-
-    roomDotsByIndex.push(arr);
-  }
-}
-
-/* Visual helpers: set main dot trail only (no toggle) - used during transitions/room->main moves */
-function setDotTrail(dotMeta){
-  if(!dotMeta || !dotMeta.el) return;
-  if(dotMeta.trail) return; // already set
-  dotMeta.trail = true;
-  const el = dotMeta.el;
-  el.classList.add('trail');
-  el.style.opacity = '1';
-  el.style.background = 'rgba(235,60,60,0.95)'; // red trail
-  el.style.boxShadow = '0 2px 6px rgba(180,40,40,0.7)';
-  el.style.transform = 'translate(-50%,-50%) scale(1.05)';
-}
-
-/* Toggle main dot (for main-path movement): original toggle behavior */
+/* Helper: toggle trail state on a single dot meta
+   This sets inline styles to ensure visibility changes take effect.
+   Trail color is red; blocked (hazard) dots keep their blocked visuals.
+*/
 function toggleDotTrail(dotMeta){
   if(!dotMeta || !dotMeta.el) return;
+
   dotMeta.trail = !dotMeta.trail;
   const el = dotMeta.el;
+
   if(dotMeta.trail){
+    // show trail: inline styles override other CSS
     el.classList.add('trail');
     el.style.opacity = '1';
-    el.style.background = 'rgba(235,60,60,0.95)';
+    el.style.background = 'rgba(235,60,60,0.95)'; // red trail
     el.style.boxShadow = '0 2px 6px rgba(180,40,40,0.7)';
-    el.style.transform = 'translate(-50%,-50%) scale(1.05)';
+    el.style.transform = 'translate(-50%, -50%) scale(1.05)';
   } else {
     el.classList.remove('trail');
+    // if it's blocked (hazard), keep blocked visuals
     if(dotMeta.blocked){
-      // keep blocked visual
       el.style.opacity = '1';
       el.style.background = 'rgba(255,120,20,0.98)';
       el.style.boxShadow = '0 2px 8px rgba(200,100,20,0.8)';
-      el.style.transform = 'translate(-50%,-50%) scale(1.15)';
+      el.style.transform = 'translate(-50%, -50%) scale(1.15)';
     } else {
+      // hide again
       el.style.opacity = '0';
       el.style.background = 'transparent';
       el.style.boxShadow = 'none';
-      el.style.transform = 'translate(-50%,-50%)';
+      el.style.transform = 'translate(-50%, -50%)';
     }
   }
 }
 
-/* Set room-dot trail (one-way: only turn on, never toggle off) */
-function setRoomDotTrail(roomDotMeta){
-  if(!roomDotMeta || !roomDotMeta.el) return;
-  if(roomDotMeta.trail) return;
-  roomDotMeta.trail = true;
-  const el = roomDotMeta.el;
-  el.classList.add('trail');
-  el.style.opacity = '1';
-  el.style.background = 'rgba(235,60,60,0.95)';
-  el.style.boxShadow = '0 2px 6px rgba(180,40,40,0.7)';
-  el.style.transform = 'translate(-50%,-50%) scale(1.05)';
-}
-
-/* Toggle all main-path dots in segIdx whose t falls in [low, high] (inclusive). */
+/* Mark/toggle all dots in segIdx whose t falls in [low, high] (inclusive).
+   low/high are in 0..1, may be low > high (we normalize). */
 function handleTrailForSegment(segIdx, low, high){
   if(!dotsBySegment || segIdx < 0 || segIdx >= dotsBySegment.length) return;
   const segDots = dotsBySegment[segIdx];
@@ -326,23 +264,27 @@ function handleTrailForSegment(segIdx, low, high){
     const d = segDots[i];
     const t = d.t;
     if (t + 1e-9 >= lo && t - 1e-9 <= hi){
-      // main path movement should toggle (first pass on, second pass off)
+      // toggle trail state for this dot
       toggleDotTrail(d);
     }
   }
 }
 
-/* Cross-segment trail handling: handles a single-frame move that may cross one boundary */
+/* Cross-segment trail handling: takes current step and ratio and the proposed next ratio.
+   Handles the common case where proposed ratio only crosses at most one boundary. */
 function handleTrailCrossingsAcrossSegments(stepIndex, rCurr, rNext){
-  if(!dotsBySegment || dotsBySegment.length === 0) return;
+  // normalize small floating noise
   if(Math.abs(rCurr - rNext) < 1e-9) return;
 
   if(rNext >= 0 && rNext <= 1){
+    // no boundary crossing
     handleTrailForSegment(stepIndex, rCurr, rNext);
     return;
   }
 
+  // forward crossing (rNext > 1)
   if(rNext > 1){
+    // mark from rCurr..1 on current segment
     handleTrailForSegment(stepIndex, rCurr, 1);
     const remaining = rNext - 1;
     const nextSeg = (stepIndex + 1) % path.length;
@@ -350,66 +292,18 @@ function handleTrailCrossingsAcrossSegments(stepIndex, rCurr, rNext){
     return;
   }
 
+  // backward crossing (rNext < 0)
   if(rNext < 0){
+    // we moved backward into previous segment.
+    // previous segment t range to mark is rNext+1 .. 1
     const prevSeg = (stepIndex - 1 + path.length) % path.length;
-    const rNextMod = rNext + 1;
+    const rNextMod = rNext + 1; // between 0..1
     handleTrailForSegment(prevSeg, rNextMod, 1);
+    // also mark from 0..rCurr on current segment (we passed the start of current going backwards)
     handleTrailForSegment(stepIndex, 0, rCurr);
     return;
   }
 }
-
-/* Helper: mark nearby main dots by proximity (used during transition and for out-of-bounds travel)
-   This sets dots to trail (not toggle) for any that are within `radius` of `point`.
-*/
-function markNearbyMainDots(point, radius = 8){
-  if(!dotsBySegment || dotsBySegment.length === 0) return;
-  const r2 = radius * radius;
-  for(let s=0;s<dotsBySegment.length;s++){
-    const seg = dotsBySegment[s];
-    for(let i=0;i<seg.length;i++){
-      const d = seg[i];
-      if(d.trail) continue; // already trailed
-      const dx = d.x - point.left;
-      const dy = d.y - point.top;
-      if(dx*dx + dy*dy <= r2){
-        setDotTrail(d);
-      }
-    }
-  }
-}
-
-/* Helper: mark nearby room dots by proximity (used while moving on a room path or transition)
-   Room dots are one-way: set them when encountered.
-   FIX: Only mark a room's dots if the given point is actually inside that room's area.
-*/
-function markNearbyRoomDots(point, radius=8){
-  if(!roomDotsByIndex || roomDotsByIndex.length === 0) return;
-  const r2 = radius * radius;
-
-  for(let ri=0; ri<roomDotsByIndex.length; ri++){
-    const arr = roomDotsByIndex[ri];
-    const rp = roomPaths[ri];
-    if(!rp || !rp.areaEl) continue; // skip if we don't have area info
-
-    // Only mark this room's dots when the point is inside that room's area
-    if(!pointIsInsideArea(rp.areaEl, point)) continue;
-
-    for(let j=0;j<arr.length;j++){
-      const d = arr[j];
-      if(d.trail) continue;
-      const dx = d.x - point.left;
-      const dy = d.y - point.top;
-      if(dx*dx + dy*dy <= r2){
-        setRoomDotTrail(d);
-      }
-    }
-  }
-}
-
-/* ================================
-   END DOT GENERATION & TRAIL HELPERS
-   ================================ */
 
 /* -------------------------------
   Finish markers
@@ -439,26 +333,8 @@ function toggleDotBlocked(segmentIndex, dotIndex) {
   if(!dotMeta) return;
   dotMeta.blocked = !dotMeta.blocked;
   dotMeta.el.dataset.blocked = dotMeta.blocked ? "true" : "false";
-  if(dotMeta.blocked) {
-    dotMeta.el.classList.add('blocked');
-    // ensure blocked visuals
-    dotMeta.el.style.opacity = '1';
-    dotMeta.el.style.background = 'rgba(255,120,20,0.98)';
-    dotMeta.el.style.boxShadow = '0 2px 8px rgba(200,100,20,0.8)';
-    dotMeta.el.style.transform = 'translate(-50%,-50%) scale(1.15)';
-  } else {
-    dotMeta.el.classList.remove('blocked');
-    // restore based on trail flag
-    if(dotMeta.trail){
-      dotMeta.el.style.opacity = '1';
-      dotMeta.el.style.background = 'rgba(235,60,60,0.95)';
-    } else {
-      dotMeta.el.style.opacity = '0';
-      dotMeta.el.style.background = 'transparent';
-      dotMeta.el.style.boxShadow = 'none';
-      dotMeta.el.style.transform = 'translate(-50%,-50%)';
-    }
-  }
+  if(dotMeta.blocked) dotMeta.el.classList.add('blocked');
+  else dotMeta.el.classList.remove('blocked');
 }
 
 function resetAllBlocks(){
@@ -467,13 +343,6 @@ function resetAllBlocks(){
       d.blocked = false;
       d.el.classList.remove('blocked');
       d.el.dataset.blocked = "false";
-      // hide if no trail
-      if(!d.trail){
-        d.el.style.opacity = '0';
-        d.el.style.background = 'transparent';
-        d.el.style.boxShadow = 'none';
-        d.el.style.transform = 'translate(-50%,-50%)';
-      }
     }
   }
 }
@@ -581,8 +450,6 @@ function placeRatAtNearest() {
       ratEl.style.left = proj.px + 'px';
       ratEl.style.top = proj.py + 'px';
       posOutput.textContent = `room:${rp.id}`;
-      // mark nearby room dots at this start position so initial dot lights if within radius
-      markNearbyRoomDots(proj, 10);
       return;
     }
   }
@@ -627,21 +494,7 @@ function animateRoomStep(){
   }
   const segLen = rp.length || 1;
   const deltaRatio = (speed / segLen); // same speed
-  const prevRatio = roomRatio;
   roomRatio += deltaRatio;
-
-  // mark room dots passed between prevRatio and roomRatio
-  // find indices of room dots and set one-way trail for dots whose t in range
-  const roomDots = roomDotsByIndex[roomIndex] || [];
-  if(roomDots.length){
-    const lo = Math.min(prevRatio, roomRatio);
-    const hi = Math.max(prevRatio, roomRatio);
-    for(const d of roomDots){
-      if(!d.trail && d.t + 1e-9 >= lo && d.t - 1e-9 <= hi){
-        setRoomDotTrail(d);
-      }
-    }
-  }
 
   if(roomRatio >= 1){
     // reached end -> transition to nearest main path smoothly using orthogonal legs
@@ -674,9 +527,6 @@ function animateRoomStep(){
   const pos = lerp(rp.start, rp.end, roomRatio);
   ratEl.style.left = pos.left + 'px';
   ratEl.style.top = pos.top + 'px';
-  // while moving on room path also mark near main dots if any (so room->main connection shows main dots)
-  markNearbyMainDots(pos, 8);
-
   posOutput.textContent = `room:${rp.id} L:${Math.round(pos.left)},T:${Math.round(pos.top)}`;
   stepOutput.textContent = `room`;
   dirOutput.textContent = rp.direction;
@@ -686,7 +536,6 @@ function animateRoomStep(){
 
 /* -------------------------------
   Transition animation (orthogonal legs)
-  - while moving on transition legs mark nearby main dots (setDotTrail) so a circle appears
   ------------------------------- */
 function animateTransitionStep(){
   if(!moving) return;
@@ -706,11 +555,6 @@ function animateTransitionStep(){
     const pos = seg.end;
     ratEl.style.left = pos.left + 'px';
     ratEl.style.top = pos.top + 'px';
-    // mark nearby main dots at leg end
-    markNearbyMainDots(pos, 8);
-    // also mark nearby room dots (in case landing near a room path)
-    markNearbyRoomDots(pos, 8);
-
     transitionIndex++;
     if(transitionIndex >= transitionSegments.length){
       // finished transition: if finalMain target exists in meta, set main step/t
@@ -725,18 +569,6 @@ function animateTransitionStep(){
       const p = lerp(path[step], path[(step+1) % path.length], ratioAlongSegment);
       ratEl.style.left = p.left + 'px';
       ratEl.style.top = p.top + 'px';
-      // ensure the projection dot is marked as trail
-      // find nearest dot on that segment (approx)
-      const segDots = dotsBySegment[step] || [];
-      if(segDots.length){
-        // pick the dot whose t is closest to ratioAlongSegment
-        let best = segDots[0]; let bestD = Infinity;
-        for(const d of segDots){
-          const dd = Math.abs(d.t - ratioAlongSegment);
-          if(dd < bestD){ bestD = dd; best = d; }
-        }
-        if(best) setDotTrail(best);
-      }
       // continue the loop on main mode
       requestAnimationFrame(animateStep);
       return;
@@ -746,16 +578,13 @@ function animateTransitionStep(){
       return;
     }
   } else {
-    // interpolate along this segment and mark nearby main/room dots
+    // interpolate along this segment
     const pos = {
       left: seg.start.left + (seg.end.left - seg.start.left) * seg.ratio,
       top: seg.start.top + (seg.end.top - seg.start.top) * seg.ratio
     };
     ratEl.style.left = pos.left + 'px';
     ratEl.style.top = pos.top + 'px';
-    // mark main dots near the transition path
-    markNearbyMainDots(pos, 8);
-    markNearbyRoomDots(pos, 8);
     requestAnimationFrame(animateStep);
     return;
   }
@@ -763,7 +592,7 @@ function animateTransitionStep(){
 
 /* -------------------------------
   Main path animation (kept original behavior, adapted)
-  - Trail handling remains as toggle (pass twice clears) for main path
+  Now with trail toggling integrated before blocked-dot detection.
   ------------------------------- */
 function animateMainStep(){
   const start = path[step];
@@ -863,10 +692,6 @@ toggleBtn.addEventListener('click', () => {
   toggleBtn.textContent = moving ? "Stop" : "Start";
   if(moving){
     buildRoomPaths();
-    // if main dots haven't been created yet, create them
-    if(dotsBySegment.length === 0) createDotsForAllSegments();
-    // create room dots if not present (buildRoomPaths already calls createRoomDotsForPaths)
-    if(roomDotsByIndex.length === 0) createRoomDotsForPaths();
     // if rat is off-path, placeRatAtNearest will create transitions if necessary
     placeRatAtNearest();
     if(step < 0) step = 0;
@@ -912,229 +737,175 @@ document.addEventListener('mouseup', () => {
 /* init */
 buildRoomPaths();
 createDotsForAllSegments();
-createRoomDotsForPaths();
 createFinishMarkers();
 ratEl.style.left = path[0].left + 'px';
 ratEl.style.top = path[0].top + 'px';
 
 /* ===========================
-   END: original + merged changes
+   END: original code
    =========================== */
+
 
 /* ===========================
-   ICON / HAZARD IIFE
-   - Top-level: builds icon panel, creates cards, supports click-to-place and drag/drop
-   - Places visible hazard image on map and marks nearby main-path dots as blocked
-   - Defensive: waits for DOMContentLoaded and for ICONS to exist
+   BEGIN: ICON / HAZARD HANDLING (REVISED)
+   - Marks dots (dotsBySegment) within a 50x50 area
+   - Uses existing 'blocked' class so movement logic treats them as blockers
+   - ResetHazards clears blocked state from dots and removes placed icons
    =========================== */
-/* Replace the ICON / HAZARD IIFE in your try11.js with this updated version.
-   Changes:
-   - Adds an .areafull constraint: icons can only be placed inside the .areafull area.
-   - Drops/click-to-place positions are clamped to that area (can't go beyond).
-   - Helper clampToArea() computes bounds relative to the map container.
-   - Everything else (visual placement, marking dots) left unchanged.
-*/
+(function(){
+  // Ensure DOM references exist
+  const iconsListEl = document.getElementById('iconsList');
+  const mapContainer = document.getElementById('mapContainer') || containerEl;
+  const resetHazardsBtn = document.getElementById('resetHazardsBtn');
 
-(function initIconsAndHazards(){
-  function setup(){
-    const mapContainer = document.getElementById('mapContainer') || containerEl;
-    if(!mapContainer){
-      console.warn('initIconsAndHazards: map container not found; aborting icons/hazard setup.');
-      return;
-    }
+  if(!iconsListEl || !mapContainer) {
+    console.warn('Icons panel or map container missing.');
+    return;
+  }
 
-    if(typeof ICONS === 'undefined'){
-      console.warn('initIconsAndHazards: ICONS is undefined. No icons will be shown.');
-      window.ICONS = [];
-    }
-    const ICONS_LOCAL = window.ICONS || [];
+  // keep track of placed hazard images and affected dots
+  const placedHazardImages = [];
+  const hazardDots = new Set(); // set of dot meta objects that were marked by hazards
 
-    // find .areafull element (area where icons are allowed). If missing, fallback to whole container.
-    const areaFullEl = document.querySelector('.areafull');
-
-    // Helper: returns area bounds relative to container (left, top, right, bottom)
-    function getAreaBounds(){
-      const containerRect = mapContainer.getBoundingClientRect();
-      if(areaFullEl){
-        const a = areaFullEl.getBoundingClientRect();
-        const left = a.left - containerRect.left;
-        const top = a.top - containerRect.top;
-        return {
-          left,
-          top,
-          right: left + a.width,
-          bottom: top + a.height,
-          width: a.width,
-          height: a.height
-        };
-      } else {
-        // fallback: full container
-        return { left: 0, top: 0, right: containerRect.width, bottom: containerRect.height, width: containerRect.width, height: containerRect.height };
-      }
-    }
-
-    // Helper: clamp a point (in container coords) to the area bounds
-    function clampToArea(point){
-      const b = getAreaBounds();
-      const x = Math.max(b.left, Math.min(point.left, b.right));
-      const y = Math.max(b.top, Math.min(point.top, b.bottom));
-      return { left: x, top: y };
-    }
-
-    // Ensure icons panel exists (create if missing)
-    let iconsListEl = document.getElementById('iconsList');
-    if(!iconsListEl){
-      const panel = document.createElement('aside');
-      panel.className = 'icons-panel';
-      panel.id = 'iconsPanel';
-      panel.innerHTML = `
-        <h2 class="icons-title">Hazard Icons</h2>
-        <div class="icons-list" id="iconsList"></div>
-        <div class="icons-actions">
-          <button id="resetHazardsBtn" class="btn secondary">Reset Hazards</button>
-        </div>
-      `;
-      document.body.appendChild(panel);
-      iconsListEl = document.getElementById('iconsList');
-    }
-
-    // Clear previous content
-    iconsListEl.innerHTML = '';
-
-    // Data structures to track placed visuals and affected dot metas
-    const placedHazardImages = [];
-    const hazardDots = new Set();
-    const AREA = 50;
-    const HALF = AREA / 2;
-
-    // Build icon cards
-    ICONS_LOCAL.forEach(icon => {
+  // Build icon cards from ICONS[] (from icons.js)
+  if(typeof ICONS === 'undefined') {
+    console.warn('ICONS array not found (icons.js).');
+  } else {
+    ICONS.forEach(icon => {
       const card = document.createElement('div');
       card.className = 'icon-card';
-      card.setAttribute('draggable','true');
-      card.dataset.iconId = icon.id || '';
+      card.setAttribute('draggable', 'true');
+      card.dataset.iconId = icon.id;
       card.dataset.iconSrc = icon.src || '';
-
+      // inner content
       const img = document.createElement('img');
       img.className = 'icon-img';
-      img.src = icon.src || '';
-      img.alt = icon.label || icon.id || '';
+      img.src = icon.src;
+      img.alt = icon.label || icon.id;
 
       const lbl = document.createElement('div');
       lbl.className = 'icon-label';
-      lbl.textContent = icon.label || icon.id || '';
+      lbl.textContent = icon.label || icon.id;
 
       card.appendChild(img);
       card.appendChild(lbl);
       iconsListEl.appendChild(card);
 
-      // dragstart: pass src and id; use drag image when available
-      card.addEventListener('dragstart', ev => {
-        try{
-          ev.dataTransfer.setData('text/plain', icon.src || '');
-          ev.dataTransfer.setData('application/icon-id', icon.id || '');
-          if(img.complete) ev.dataTransfer.setDragImage(img, img.width/2, img.height/2);
-        }catch(e){}
+      // dragstart: pass the src and id
+      card.addEventListener('dragstart', (ev) => {
+        try {
+          ev.dataTransfer.setData('text/plain', icon.src);
+          ev.dataTransfer.setData('application/icon-id', icon.id);
+          if(img.complete){
+            ev.dataTransfer.setDragImage(img, img.width/2, img.height/2);
+          }
+        } catch(e) {
+          // ignore
+        }
       });
 
-      // click to select for click-to-place
+      // click selects card for click-then-place workflow
       card.addEventListener('click', () => {
         document.querySelectorAll('.icon-card.selected').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
       });
     });
+  }
 
-    // Handler that places the hazard image and marks dots
-    function placeHazardAtPoint(point, iconSrc, iconId=''){
-      // clamp to area (safety)
-      const pt = clampToArea(point);
+  // Allow dropping on mapContainer
+  mapContainer.addEventListener('dragover', (ev) => {
+    ev.preventDefault(); // allow drop
+  });
 
-      // add visual icon
-      const ph = document.createElement('img');
-      ph.src = iconSrc;
-      ph.className = 'placed-hazard';
-      ph.style.position = 'absolute';
-      ph.style.left = pt.left + 'px';
-      ph.style.top = pt.top + 'px';
-      ph.style.transform = 'translate(-50%,-50%)';
-      ph.style.zIndex = '800';
-      // prevent placed element from intercepting map clicks (so it does not trigger re-placement)
-      ph.style.pointerEvents = 'none';
-      ph.dataset.iconId = iconId;
-      mapContainer.appendChild(ph);
-      placedHazardImages.push(ph);
+  mapContainer.addEventListener('drop', (ev) => {
+    ev.preventDefault();
+    const src = ev.dataTransfer.getData('text/plain');
+    const iconId = ev.dataTransfer.getData('application/icon-id') || '';
+    if(!src) return;
 
-      // compute square and mark dots
-      const left = pt.left - HALF;
-      const top = pt.top - HALF;
-      const right = left + AREA;
-      const bottom = top + AREA;
+    const containerRect = mapContainer.getBoundingClientRect();
+    const dropX = ev.clientX - containerRect.left;
+    const dropY = ev.clientY - containerRect.top;
 
-      // ensure dots exist
-      if(!dotsBySegment || dotsBySegment.length === 0) createDotsForAllSegments();
+    placeHazardAtPoint({ left: dropX, top: dropY }, src, iconId);
+  });
 
-      for(let s=0;s<dotsBySegment.length;s++){
-        const arr = dotsBySegment[s];
-        for(let i=0;i<arr.length;i++){
-          const d = arr[i];
-          if(d.x >= left && d.x <= right && d.y >= top && d.y <= bottom){
-            d.blocked = true;
-            d.el.dataset.blocked = "true";
-            d.el.classList.add('blocked');
-            d.el.dataset.hazardIcon = iconId || '';
-            // ensure blocked visuals inline
-            d.el.style.opacity = '1';
-            d.el.style.background = 'rgba(255,120,20,0.98)';
-            d.el.style.boxShadow = '0 2px 8px rgba(200,100,20,0.8)';
-            d.el.style.transform = 'translate(-50%,-50%) scale(1.15)';
-            hazardDots.add(d);
-          }
+  // Support placing by click: select an icon then click on map
+  mapContainer.addEventListener('click', (ev) => {
+    const selected = document.querySelector('.icon-card.selected');
+    if(!selected) return;
+    const src = selected.dataset.iconSrc;
+    const id  = selected.dataset.iconId;
+    if(!src) return;
+    const containerRect = mapContainer.getBoundingClientRect();
+    const dropX = ev.clientX - containerRect.left;
+    const dropY = ev.clientY - containerRect.top;
+    placeHazardAtPoint({ left: dropX, top: dropY }, src, id);
+    // keep selection for multiple placements
+  });
+
+  // hazard area size (50x50)
+  const AREA_SIZE = 50;
+  const HSIZE = AREA_SIZE / 2;
+
+  function placeHazardAtPoint(point, iconSrc, iconId = ''){
+    // place a small visual icon at the drop point
+    const img = document.createElement('img');
+    img.src = iconSrc;
+    img.className = 'placed-hazard';
+    img.style.left = point.left + 'px';
+    img.style.top = point.top + 'px';
+    img.dataset.iconId = iconId;
+    mapContainer.appendChild(img);
+    placedHazardImages.push(img);
+
+    // compute square centered at point (container coords)
+    const sqLeft = point.left - HSIZE;
+    const sqTop = point.top - HSIZE;
+    const sqRight = sqLeft + AREA_SIZE;
+    const sqBottom = sqTop + AREA_SIZE;
+
+    // If dots haven't been generated yet, create them first
+    if(!dotsBySegment || dotsBySegment.length === 0){
+      createDotsForAllSegments();
+    }
+
+    // iterate all dots in dotsBySegment and mark those that are inside the square
+    for(let segIdx = 0; segIdx < dotsBySegment.length; segIdx++){
+      const segDots = dotsBySegment[segIdx];
+      for(let i=0;i<segDots.length;i++){
+        const d = segDots[i];
+        const x = d.x;
+        const y = d.y;
+        // intersects if dot center lies within square
+        if(x >= sqLeft && x <= sqRight && y >= sqTop && y <= sqBottom){
+          // mark as blocked/hazard (persistent until reset)
+          d.blocked = true;
+          d.el.dataset.blocked = "true";
+          d.el.classList.add('blocked'); // reuse blocked style so it integrates with movement logic
+          // record which hazard marked it (optional)
+          d.el.dataset.hazardIcon = iconId || '';
+          hazardDots.add(d);
+
+          // ensure blocked visuals visible immediately
+          d.el.style.opacity = '1';
+          d.el.style.background = 'rgba(255,120,20,0.98)';
+          d.el.style.boxShadow = '0 2px 8px rgba(200,100,20,0.8)';
+          d.el.style.transform = 'translate(-50%,-50%) scale(1.15)';
         }
       }
     }
+  }
 
-    // wire drop & click handlers on mapContainer
-    mapContainer.addEventListener('dragover', e => e.preventDefault());
-    mapContainer.addEventListener('drop', e => {
-      e.preventDefault();
-      // ignore drops coming from icons panel (safety)
-      if(e.target.closest && e.target.closest('.icons-panel')) return;
-
-      const src = e.dataTransfer.getData('text/plain');
-      const iconId = e.dataTransfer.getData('application/icon-id') || '';
-      if(!src) return;
-      const rect = mapContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      // clamp drop point inside areafull
-      const clamped = clampToArea({ left: x, top: y });
-      placeHazardAtPoint(clamped, src, iconId);
-    });
-
-    // click-to-place selected icon (ignore clicks from placed-hazard or icons-panel)
-    mapContainer.addEventListener('click', e => {
-      if(e.target.closest && e.target.closest('.placed-hazard')) return;
-      if(e.target.closest && e.target.closest('.icons-panel')) return;
-
-      const selected = document.querySelector('.icon-card.selected');
-      if(!selected) return;
-      const src = selected.dataset.iconSrc;
-      const id = selected.dataset.iconId;
-      if(!src) return;
-      const rect = mapContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const clamped = clampToArea({ left: x, top: y });
-      placeHazardAtPoint(clamped, src, id);
-    });
-
-    // reset hazards button
-    function resetHandler(){
+  // Reset hazards control
+  if(resetHazardsBtn){
+    resetHazardsBtn.addEventListener('click', () => {
+      // Unmark all hazard-marked dots
       hazardDots.forEach(d => {
         d.blocked = false;
-        delete d.el.dataset.hazardIcon;
         d.el.classList.remove('blocked');
         d.el.dataset.blocked = "false";
+        delete d.el.dataset.hazardIcon;
         // restore based on trail flag
         if(d.trail){
           d.el.style.opacity = '1';
@@ -1149,37 +920,25 @@ ratEl.style.top = path[0].top + 'px';
         }
       });
       hazardDots.clear();
+
+      // remove placed images
       placedHazardImages.forEach(img => img.remove());
       placedHazardImages.length = 0;
+
+      // clear any selected icon
       document.querySelectorAll('.icon-card.selected').forEach(c => c.classList.remove('selected'));
-    }
-    const resetBtn = document.getElementById('resetHazardsBtn');
-    if(resetBtn) resetBtn.addEventListener('click', resetHandler);
-
-    // expose API
-    window.__hazardUtils = {
-      placeHazardAtPoint,
-      resetHazards: resetHandler,
-      hazardDots,
-      placedHazardImages
-    };
-
-    console.log('initIconsAndHazards: initialized, icons:', ICONS_LOCAL.length);
-  } // end setup
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', setup, { once: true });
-  } else {
-    setTimeout(setup, 0);
+    });
   }
+
+  // Expose a small API on window for debugging if needed
+  window.__hazardUtils = {
+    placeHazardAtPoint,
+    resetHazards: () => resetHazardsBtn && resetHazardsBtn.click(),
+    getHazardDots: () => Array.from(hazardDots)
+  };
+
 })();
 
-/* Expose debug helpers for convenience */
-window.__debugTrail = {
-  dotsBySegment,
-  roomDotsByIndex,
-  setDotTrail,
-  setRoomDotTrail,
-  markNearbyMainDots,
-  markNearbyRoomDots
-};
+/* ===========================
+   END: ICON / HAZARD HANDLING
+   =========================== */

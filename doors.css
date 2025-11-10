@@ -2,7 +2,7 @@
 :root {
     --door-exit-bg: rgba(79, 123, 190, 1);
     --door-exit-border: rgba(62, 84, 165, 1);
-    --door-exit-opacity: 0.49;
+    --door-exit-opacity: 0.0;
     --door-exit-shadow: 0px 2.83px 2.83px rgba(0, 0, 0, 0.75);
 }
 
