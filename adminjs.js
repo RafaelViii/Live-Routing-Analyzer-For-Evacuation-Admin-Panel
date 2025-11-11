@@ -1,9 +1,8 @@
 // Predefined accounts (username: password)
 // Modify these values for additional admin accounts.
 const ACCOUNTS = {
-  "admin": "evac@123",
+  "admin": "123",
   "operator": "routeMaster",
-  "supervisor": "safePath"
 };
 
 const loginForm = document.getElementById('loginForm');
@@ -84,7 +83,7 @@ if (loginForm) {
     // Keep loader visible for a short moment to show animation, then redirect
     setTimeout(() => {
       // Transition to admin page
-      window.location.href = 'trynew.html';
+      window.location.href = 'Simulator.html';
     }, 1300);
   });
 

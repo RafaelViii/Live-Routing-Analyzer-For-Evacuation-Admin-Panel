@@ -13,11 +13,11 @@
   <link rel="stylesheet" href="room.css"/>
 </head>
 <body>
+ 
 <nav>
     <h1 class="header">Path Analysis Simulator</h1>
+    <button class="logout" id="logout">Logout</button>
 </nav>
-
-
 
 <!-- Main area + icons panel wrapper -->
 <div class="main-wrapper">
@@ -26,9 +26,7 @@
       <img class="person" src="assets/human.png" alt="Person" />
     </div>
 
-    <div class="exitIcon">
-      <img class="exitupper" src="assets/icons8-fire-exit-80.png" alt="Exit Icon">
-    </div>
+    
 
     <!-- Paths container -->
     <div class="path path1 horizontal"></div>
@@ -121,12 +119,25 @@
     <div class="corner corner22"></div>
 
     <div class="controls">
+
+  <p class="emc">Controls</p>
   <button id="toggleBtn">Simulate</button>
   <button id="resetBtn">Clear Nodes</button>
   
-
-</div>
+  <div class="exitIcon">
+        <img class="exitupper" src="assets/icons8-fire-exit-80.png" alt="Exit Icon">
+      </div>
   </div>
+  </div>
+
+  <div class="legend">
+  <img class="legends" src="./assets/Asset 1.png" alt="Legend image">
+  </div>
+
+  <div class="floor">
+  <img class="floorimg" src="./assets/FloorBase.png" alt="Floor Plan">
+  </div>
+
 
   <!-- Icons panel on the right (built from icons.js) -->
   <aside class="icons-panel" id="iconsPanel" aria-label="Hazard icons">
@@ -150,6 +161,43 @@
     
   
 </div>
+
+<script defer>
+  // Prevent access if not logged in
+  if (!sessionStorage.getItem('evac_admin_user')) {
+    window.location.href = 'index.html'; // redirect to login
+  }
+
+  // Prevent back button navigation after login
+  history.pushState(null, null, location.href);
+  window.onpopstate = function () {
+    history.go(1);
+  };
+
+  // Logout logic
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('evac_admin_user'); // clear session
+      window.location.href = 'index.html'; // back to login
+    });
+  }
+
+
+  document.getElementById("resetBtn").addEventListener("click", function() {
+    location.reload();
+  });
+  
+   document.getElementById("logout").addEventListener("click", function() {
+    // Optionally clear any saved session data
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Redirect to the index page
+    window.location.href = "index.html";
+  });
+</script>
+
 
 
 

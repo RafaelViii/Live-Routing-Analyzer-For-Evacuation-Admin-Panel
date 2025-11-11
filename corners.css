@@ -1,6 +1,6 @@
 /* Root variables for easy design */
 :root {
-    --corner-bg-color: rgb(42, 40, 54);
+    --corner-bg-color: #292c42;
     --corner-border-color: rgba(4, 16, 65, 0);
 }
 

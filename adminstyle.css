@@ -26,13 +26,13 @@ body{
 
 /* Page / card */
 .page{width:100%;max-width:420px}
-.login-card{
-  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,250,0.82));
-  border-radius:var(--radius);
-  padding:28px;
-  box-shadow:0 10px 30px rgba(18,38,80,0.18);
-  backdrop-filter: blur(6px);
-  border:1px solid rgba(255,255,255,0.4);
+.login-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,245,245,0.85));
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(20, 20, 40, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .title{
