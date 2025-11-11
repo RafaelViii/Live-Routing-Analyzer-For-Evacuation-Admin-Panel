@@ -83,7 +83,7 @@ if (loginForm) {
     // Keep loader visible for a short moment to show animation, then redirect
     setTimeout(() => {
       // Transition to admin page
-      window.location.href = 'Simulator.html';
+      window.location.href = 'dump.html';
     }, 1300);
   });
 

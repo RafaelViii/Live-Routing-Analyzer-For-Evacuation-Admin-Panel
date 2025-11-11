@@ -164,6 +164,35 @@ body {
       pointer-events: none;
       z-index: 4;
     }
+    /* follower (place in your main CSS) */
+/* --- Add/replace these rules to support camera centering (translate of the map) --- */
+
+/* Ensure the element with id="mapContainer" can be translated and stays positioned */
+#mapContainer, .container {
+  /* ensure transform origin is top-left so translate(x,y) moves content predictably */
+  transform-origin: 0 0;
+  /* enable hardware-accelerated transform for smoother animation */
+  will-change: transform;
+  /* keep overflow hidden so the viewport crops the map */
+  overflow: hidden;
+  /* keep existing position rules (if .container already sets these, no change) */
+  position: relative;
+}
+
+/* Optional: smooth transitions when JS toggles smooth=true */
+#mapContainer.smooth-center {
+  transition: transform 0.08s linear;
+}
+
+/* Follower visual remains unchanged; ensure highest z-index so it remains visible above dots */
+.follower {
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  transform: translate(-50%,-50%);
+  z-index: 1200;
+  pointer-events: none;
+}
     .dot {
       position: absolute;
       width: 10px;
