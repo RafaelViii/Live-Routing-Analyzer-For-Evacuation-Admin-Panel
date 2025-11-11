@@ -130,6 +130,17 @@ body {
     }
     button:hover { background: #1c264a; }
 
+
+    .simulation-explanation{ 
+      position: absolute;
+      text-align:justify;
+      top: 555px;
+      font-size: 11px;
+      color:#1a1a1b;
+      left: 300px;
+      width: 500px;
+    }
+
     /* Rat */
     .rat {
       position: absolute;
