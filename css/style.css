@@ -9,6 +9,7 @@
     --logout-bg: #fff;
     --toggle-bg: #379b3c;
     --reset-bg: #b83434;
+    --camera-bg:#eeeeee;
     --content-border-color: #25263a;
     /* --container-color:radial-gradient(circle at center, #dbe7f7 0%, #a3b9de 40%, #8396b9 100%); */
     --container-color:white;
@@ -137,8 +138,8 @@ body {
       top: 555px;
       font-size: 11px;
       color:#1a1a1b;
-      left: 300px;
-      width: 500px;
+      left: 400px;
+      width: 400px;
     }
 
     /* Rat */
@@ -256,8 +257,36 @@ body {
         font-size: 14px;
     }
 
-    .person{
-      position: relative;
-        width: 70px;
-        /* top: 100px; */
+    .person {
+    position: relative;
+    width: 70px;
+    transition: opacity 0.3s ease; /* smooth fade */
     }
+
+
+    .camera{
+      background-color:var(--camera-bg);
+      margin: 10px 0 0 3px;
+      width: 96%;
+      font-weight: 700;
+    
+      color: #000000;
+      transition: color 0.2s; 
+    }
+
+    .camera:hover {
+      color: white;
+      cursor: pointer; 
+    }
+    
+    .camerascan{
+      background-color: rgb(179, 64, 64);
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .camerascan:hover{
+      background-color:  rgb(163, 48, 48);
+    }
+
+  

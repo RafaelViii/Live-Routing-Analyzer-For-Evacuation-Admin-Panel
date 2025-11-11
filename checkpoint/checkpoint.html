@@ -121,8 +121,10 @@
     <div class="controls">
 
   <p class="emc">Controls</p>
+  
   <button id="toggleBtn">Simulate</button>
   <button id="resetBtn">Clear Nodes</button>
+  <button id="followBtn">Follow Path</button>
 
   <p class="simulation-explanation">This website showcases a 2D simulation based on our research on AI-Based Optimized Evacuation Routes in large buildings during emergencies. 
   Using live 3D mapping data captured by LiDAR and other monitoring sensors, we recreate the building layout in 2D, showing rooms, hallways, 
@@ -189,9 +191,6 @@
   }
 
 
-  
-
-
   document.getElementById("resetBtn").addEventListener("click", function() {
     location.reload();
   });
@@ -212,6 +211,6 @@
 
 
 <script src="icons.js"></script>
-<script src="try11.js"></script>
+<script src="dump.js"></script>
 </body>
 </html>

@@ -35,7 +35,6 @@ const path = [
   { left: 285, top: 75 }
 ];
 // Replace this with your server's IP/address, e.g. ws://192.168.1.10:8081
-// GAGO KA!
 const POVID_SERVER_URL = 'ws://192.168.100.149:8081'; 
 let povWs;
 function connectPovWs() {
@@ -546,7 +545,7 @@ let followerEl = null;
 let playbackRAF = null;
 let playbackIdx = 0;
 let playbackLastTime = 0;
-const PLAYBACK_INTERVAL_MS = 100; // ms per playback step (~50 FPS)
+const PLAYBACK_INTERVAL_MS = 20; // ms per playback step (~50 FPS)
 
 // computed playback points (built from recordedTrail mapped to visible trail dots at finish)
 let playbackTrailPoints = []; // array of {left,top}
@@ -841,10 +840,6 @@ function animateMainStep(){
     moving = false;
     recording = false;
     trailComplete = true;
-
-    const person = document.getElementById("hide");
-    person.style.transition = `opacity ${fadeSpeed} ease`; // use same fade speed
-    person.style.opacity = "1"; // fade person back in
     // Build playback trail now from recordedTrail but filter to visible dot trail
     buildPlaybackTrailFromRecorded();
     if(followBtn) followBtn.disabled = false;
@@ -854,10 +849,6 @@ function animateMainStep(){
     recordCurrentRatPosition();
     return;
   }
-
-
-
-
 
   // blocking detection
   const checkSegment = step;
@@ -963,27 +954,20 @@ function recordCurrentRatPosition(){
   recordTrailPoint(p);
 }
 
-/* ---------- Create or refresh follower image ---------- */
+/* ---------- Create follower image (if missing) ---------- */
 function createFollowerIfNeeded(){
-  if(!followerEl){
-    // Create new follower if it doesn't exist
-    followerEl = document.createElement('img');
-    followerEl.className = 'follower';
-    followerEl.style.position = 'absolute';
-    followerEl.style.transform = 'translate(-50%,-50%)';
-    followerEl.style.pointerEvents = 'none';
-    followerEl.style.zIndex = '900';
-    followerEl.style.width = '20px';
-    followerEl.style.height = '20px';
-    containerEl.appendChild(followerEl);
-  }
-
-  // Randomly pick boy or girl every time
-  const images = ['assets/boy.png', 'assets/girl.png'];
-  const randomIndex = Math.floor(Math.random() * images.length);
-  followerEl.src = images[randomIndex];
+  if(followerEl) return;
+  followerEl = document.createElement('img');
+  followerEl.className = 'follower';
+  followerEl.src = 'assets/user.png'; // ensure this file exists
+  followerEl.style.position = 'absolute';
+  followerEl.style.transform = 'translate(-50%,-50%)';
+  followerEl.style.pointerEvents = 'none';
+  followerEl.style.zIndex = '900';
+  followerEl.style.width = '20px';
+  followerEl.style.height = '20px';
+  containerEl.appendChild(followerEl);
 }
-
 
 /* ---------- Playback loop: step through playbackTrailPoints[] ---------- */
 function playbackStep(timestamp){
@@ -1168,7 +1152,7 @@ if(followBtn){
 }
 
 /* start/stop handlers */
-  toggleBtn.addEventListener('click', () => {
+toggleBtn.addEventListener('click', () => {
   // Toggle moving and init recording states
   moving = !moving;
   toggleBtn.textContent = moving ? "Stop" : "Start";
